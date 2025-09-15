@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create App - Mini App Store</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="apple-touch-icon" href="/favicon.ico">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <div class="logo-icon">📱</div>
+                    <div class="logo-text">Mini App Store</div>
+                </a>
+                <a href="/" class="nav-button">Back to Store</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <h1 class="page-title">Create New App</h1>
+            <p class="page-subtitle">Add your web app to the store and make it installable on iOS</p>
+
+            <div class="form-container">
+                <div id="message-container"></div>
+                
+                <form id="app-form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="name" class="form-label">App Name *</label>
+                        <input type="text" id="name" name="name" class="form-input" placeholder="Enter app name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description" class="form-label">Description *</label>
+                        <textarea id="description" name="description" class="form-textarea" placeholder="Describe what your app does" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="launchUrl" class="form-label">Launch URL *</label>
+                        <input type="url" id="launchUrl" name="launchUrl" class="form-input" placeholder="https://example.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="icon" class="form-label">App Icon (Optional)</label>
+                        <div class="file-input-container">
+                            <input type="file" id="icon" name="icon" class="file-input" accept="image/*">
+                            <label for="icon" class="file-input-label">
+                                <div class="file-input-text" id="file-text">
+                                    📎 Choose an icon image (PNG, JPG, GIF)
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-button" id="submit-btn">
+                        Create App
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('app-form');
+            const submitBtn = document.getElementById('submit-btn');
+            const messageContainer = document.getElementById('message-container');
+            const fileInput = document.getElementById('icon');
+            const fileText = document.getElementById('file-text');
+
+            // Handle file input display
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    fileText.textContent = `📎 ${this.files[0].name}`;
+                } else {
+                    fileText.textContent = '📎 Choose an icon image (PNG, JPG, GIF)';
+                }
+            });
+
+            // Handle form submission
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating App...';
+                messageContainer.innerHTML = '';
+
+                try {
+                    const formData = new FormData(form);
+                    
+                    const response = await fetch('/api/apps', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        messageContainer.innerHTML = `
+                            <div class="success-message">
+                                ✅ App "${result.app.name}" created successfully!
+                            </div>
+                        `;
+                        
+                        // Reset form
+                        form.reset();
+                        fileText.textContent = '📎 Choose an icon image (PNG, JPG, GIF)';
+                        
+                        // Redirect to home page after 2 seconds
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 2000);
+                    } else {
+                        throw new Error(result.error || 'Failed to create app');
+                    }
+                } catch (error) {
+                    messageContainer.innerHTML = `
+                        <div class="error-message">
+                            ❌ Error: ${error.message}
+                        </div>
+                    `;
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Create App';
+                }
+            });
+
+            // Form validation
+            const inputs = form.querySelectorAll('input[required], textarea[required]');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    const isValid = form.checkValidity();
+                    submitBtn.disabled = !isValid;
+                });
+            });
+
+            // URL validation
+            const urlInput = document.getElementById('launchUrl');
+            urlInput.addEventListener('blur', function() {
+                const url = this.value.trim();
+                if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+                    this.value = 'https://' + url;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
